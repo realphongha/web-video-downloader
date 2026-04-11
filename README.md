@@ -36,11 +36,6 @@ python main.py --capturer playwright --url "https://example.com/video-page"
 python main.py --capturer api
 ```
 
-1. Starts API server on `http://127.0.0.1:5000`
-2. Open video in Chrome with extension installed
-3. Play the video - extension captures URLs automatically
-4. Video downloads when stream detected
-
 See [Chrome Extension Setup](#chrome-extension-setup) below.
 
 ## Usage
@@ -93,8 +88,6 @@ The capturer detects video URLs by:
 
 ## Chrome Extension Setup
 
-The API capturer uses a Chrome extension to capture video URLs in the browser.
-
 ### 1. Create Icon Files
 
 Create 3 PNG icons in `capturer/extension/`:
@@ -105,7 +98,7 @@ Create 3 PNG icons in `capturer/extension/`:
 | `icon48.png` | 48x48 |
 | `icon128.png` | 128x128 |
 
-Or use the placeholder PNGs.
+Or use any placeholder PNGs.
 
 ### 2. Load Extension in Chrome
 
@@ -118,28 +111,35 @@ Or use the placeholder PNGs.
 ### 3. Usage Flow
 
 ```
-┌─────────────────┐     POST /capture      ┌─────────────┐
-│   Chrome        │───────────────────────→│  API Server │
-│   + Extension  │                       │  (Python)   │
-│                │    video URL          │             │
-│  1. Open page  │←──────────────────────│  2. Capture │
-│  2. Play video │                       │  3. Download│
-└─────────────────┘                       └─────────────┘
+┌─────────────────┐     POST /select    ┌─────────────┐
+│   Chrome        │───────────────────→│  API Server │
+│   + Extension  │                   │  (Python)  │
+│               │   video URL      │            │
+│  1. Capture  │←────────────────│  2. Download│
+│  2. Select   │                │            │
+└───────────────┘                └────────────┘
 ```
 
-1. Start the Python API server: `python main.py --capturer api`
-2. Open the video page in Chrome (with extension)
-3. Click the extension icon to see captured URLs
+**Step by step:**
+
+1. Start Python: `python main.py --capturer api`
+2. Open video page in Chrome
+3. In extension popup, turn **ON** capturing (toggle)
 4. Play the video
-5. Extension sends URL to API → Python downloads automatically
+5. Click **"Select to Download"** on the URL you want
+6. Python downloads the video
 
 ### Extension Features
 
-- Intercepts XHR/Fetch and main frame requests
-- Filters blacklisted headers (host, content-length, etc.)
-- Injects cookies and referer
-- Shows captured URLs in popup
-- Sends to `http://127.0.0.1:5000/capture`
+| Feature | Description |
+|---------|------------|
+| **Toggle** | Turn capturing ON/OFF (default OFF) |
+| **Storage** | URLs stored in browser (chrome.storage.local) |
+| **Deduplication** | Same URL won't be added twice |
+| **Sort** | Newest URLs first with timestamp |
+| **Clear All** | Clear all captured URLs |
+| **Reload Page** | Reload current tab to catch URLs again |
+| **Select to Download** | Send URL to API server for download |
 
 ---
 
@@ -165,12 +165,6 @@ web-video-downloader/
 │   ├── mp4.py         # Progressive downloader
 │   └── ffmpeg.py      # ffmpeg-based downloader
 └── demo.py            # Legacy demo script
-```
-
-### Running Tests
-
-```bash
-# No tests yet - PRs welcome!
 ```
 
 ### Adding New Capturers

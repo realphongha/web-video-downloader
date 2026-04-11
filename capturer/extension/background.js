@@ -1,6 +1,3 @@
-const API_SERVER = "http://127.0.0.1:5000";
-const CAPTURE_ENDPOINT = `${API_SERVER}/capture`;
-
 const blacklist = new Set([
   "host",
   "content-length",
@@ -15,12 +12,55 @@ const blacklist = new Set([
 ]);
 
 let pageUrl = null;
-const capturedUrls = new Map();
+let isCapturing = false;
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url) {
     pageUrl = tab.url;
-    capturedUrls.clear();
+  }
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "toggleCapturing") {
+    isCapturing = request.enabled;
+    chrome.storage.local.set({ isCapturing: isCapturing });
+    if (isCapturing) {
+      registerListeners();
+    } else {
+      unregisterListeners();
+    }
+    sendResponse({ isCapturing });
+  } else if (request.action === "getStatus") {
+    sendResponse({ isCapturing });
+  } else if (request.action === "clearUrls") {
+    chrome.storage.local.set({ capturedUrls: [] });
+    sendResponse({ status: "ok" });
+  }
+  return true;
+});
+
+function registerListeners() {
+  chrome.webRequest.onCompleted.addListener(
+    processRequest,
+    { urls: ["<all_urls>"] }
+  );
+  chrome.webRequest.onErrorOccurred.addListener(
+    processRequest,
+    { urls: ["<all_urls>"] }
+  );
+  console.log("[*] Capturing started");
+}
+
+function unregisterListeners() {
+  chrome.webRequest.onCompleted.removeListener(processRequest);
+  chrome.webRequest.onErrorOccurred.removeListener(processRequest);
+  console.log("[*] Capturing stopped");
+}
+
+chrome.storage.local.get(["capturedUrls", "isCapturing"]).then((result) => {
+  isCapturing = result.isCapturing || false;
+  if (isCapturing) {
+    registerListeners();
   }
 });
 
@@ -34,7 +74,9 @@ function isVideoUrl(url, contentType) {
   return null;
 }
 
-function processRequest(details) {
+async function processRequest(details) {
+  if (!isCapturing) return;
+  
   const url = details.url;
   const responseHeaders = details.responseHeaders || [];
   const headers = {};
@@ -46,71 +88,37 @@ function processRequest(details) {
   const contentType = headers["content-type"] || "";
   const mediaType = isVideoUrl(url, contentType);
   
-  if (mediaType && !capturedUrls.has(url)) {
-    console.log(`[+] Found ${mediaType}: ${url}`);
-    
-    const filteredHeaders = {};
-    for (const [key, value] of Object.entries(headers)) {
-      if (!blacklist.has(key)) {
-        filteredHeaders[key] = value;
-      }
+  if (!mediaType) return;
+  
+  const result = await chrome.storage.local.get(["capturedUrls"]);
+  const capturedUrls = result.capturedUrls || [];
+  
+  if (capturedUrls.some(u => u.url === url)) return;
+  
+  console.log(`[+] Found ${mediaType}: ${url}`);
+  
+  const filteredHeaders = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (!blacklist.has(key)) {
+      filteredHeaders[key] = value;
     }
-    
-    if (pageUrl) {
-      filteredHeaders["referer"] = pageUrl;
-    }
-    if (!filteredHeaders["user-agent"]) {
-      filteredHeaders["user-agent"] = "Mozilla/5.0";
-    }
-    
-    capturedUrls.set(url, {
-      type: mediaType,
-      headers: filteredHeaders,
-    });
-    
-    sendToAPI(url, mediaType, filteredHeaders);
   }
+  
+  if (pageUrl) {
+    filteredHeaders["referer"] = pageUrl;
+  }
+  if (!filteredHeaders["user-agent"]) {
+    filteredHeaders["user-agent"] = "Mozilla/5.0";
+  }
+  
+  const newItem = {
+    url,
+    type: mediaType,
+    headers: filteredHeaders,
+    timestamp: Date.now()
+  };
+  
+  capturedUrls.unshift(newItem);
+  
+  await chrome.storage.local.set({ capturedUrls });
 }
-
-chrome.webRequest.onCompleted.addListener(
-  processRequest,
-  { urls: ["<all_urls>"] }
-);
-
-chrome.webRequest.onErrorOccurred.addListener(
-  processRequest,
-  { urls: ["<all_urls>"] }
-);
-
-async function sendToAPI(url, streamType, headers) {
-  try {
-    const response = await fetch(CAPTURE_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: url,
-        type: streamType,
-        headers: headers,
-      }),
-    });
-    
-    const result = await response.json();
-    console.log("[+] Sent to API server:", result);
-  } catch (error) {
-    console.error("[-] Failed to send to API server:", error);
-  }
-}
-
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "getCapturedUrls") {
-    const urls = Array.from(capturedUrls.entries()).map(([url, data]) => ({
-      url,
-      type: data.type,
-      headers: data.headers,
-    }));
-    sendResponse({ urls });
-  }
-  return true;
-});

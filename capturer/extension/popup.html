@@ -20,17 +20,63 @@
       border-radius: 4px;
       font-size: 12px;
       margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    .status.listening {
+    .status.off {
+      background: #5a2727;
+      color: #ff9090;
+    }
+    .status.on {
       background: #2d5a27;
       color: #90ee90;
     }
-    .status.waiting {
-      background: #5a5727;
-      color: #eeeb90;
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #666;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+    .toggle .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    .toggle input:checked + .slider {
+      background-color: #22c55e;
+    }
+    .toggle input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    .buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
     }
     button {
-      width: 100%;
+      flex: 1;
       padding: 8px 12px;
       border: none;
       border-radius: 4px;
@@ -38,30 +84,39 @@
       color: white;
       cursor: pointer;
       font-size: 13px;
-      margin-bottom: 8px;
     }
     button:hover {
       background: #2563eb;
     }
+    button.danger {
+      background: #ef4444;
+    }
+    button.danger:hover {
+      background: #dc2626;
+    }
+    button.secondary {
+      background: #4b5563;
+    }
+    button.secondary:hover {
+      background: #374151;
+    }
     button.select {
       background: #22c55e;
-      margin-top: 4px;
+      margin-top: 6px;
+      width: 100%;
     }
     button.select:hover {
       background: #16a34a;
     }
-    button.clear {
-      background: #ef4444;
-      margin-top: 8px;
-    }
-    button.clear:hover {
-      background: #dc2626;
+    button.select:disabled {
+      background: #374151;
+      cursor: not-allowed;
     }
     ul {
       list-style: none;
       padding: 0;
       margin: 0;
-      max-height: 250px;
+      max-height: 280px;
       overflow-y: auto;
     }
     li {
@@ -71,24 +126,41 @@
       margin-bottom: 6px;
       font-size: 11px;
     }
+    li .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
     li .type {
       font-weight: 600;
       color: #60a5fa;
+    }
+    li .time {
+      color: #6b7280;
+      font-size: 10px;
     }
     li .url {
       word-break: break-all;
       color: #9ca3af;
       margin-top: 4px;
     }
-    li.selected {
-      border: 2px solid #22c55e;
-    }
   </style>
 </head>
 <body>
   <h3>Video URL Capturer</h3>
-  <div id="status" class="status waiting">Fetching URLs...</div>
-  <button id="refreshBtn">Refresh URLs</button>
+  <div id="status" class="status off">
+    <span id="statusText">Capturing: OFF</span>
+    <label class="toggle">
+      <input type="checkbox" id="captureToggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+  
+  <div class="buttons">
+    <button id="clearBtn" class="danger">Clear All</button>
+    <button id="reloadBtn" class="secondary">Reload Page</button>
+  </div>
+  
   <ul id="urlList"></ul>
   
   <script src="popup.js"></script>
