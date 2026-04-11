@@ -1,5 +1,6 @@
 from .base import BaseCapturer, CaptureResult
 from playwright.sync_api import sync_playwright
+import re
 
 def filter_headers(headers):
     blacklist = {
@@ -30,6 +31,31 @@ def inject_cookies(context, headers):
     headers["Cookie"] = cookie_header
     return headers
 
+def is_media_url(url, content_type=""):
+    url = (url or "").lower()
+    content_type = (content_type or "").lower()
+
+    if ".m3u8" in url:
+        return "hls"
+    if "application/vnd.apple.mpegurl" in content_type or "application/x-mpegurl" in content_type:
+        return "hls"
+
+    if ".mpd" in url:
+        return "dash"
+    if "application/dash+xml" in content_type:
+        return "dash"
+
+    if ".m4s" in url or "mime=video" in url or "mime=audio" in url:
+        return "dash"
+
+    if re.search(r"\.(mp4|webm|mkv)(\?|$)", url):
+        return "progressive"
+
+    if content_type.startswith("video/") and ".m4s" not in url and "segment" not in url:
+        return "progressive"
+
+    return None
+
 class PlaywrightCapturer(BaseCapturer):
     def __init__(self):
         pass
@@ -41,6 +67,24 @@ class PlaywrightCapturer(BaseCapturer):
             browser = p.chromium.launch(headless=False)
             context = browser.new_context()
             page = context.new_page()
+
+            def handle_response_v2(response):
+                url = response.url
+                headers = response.headers
+                content_type = headers.get("content-type", "").lower()
+                media_type = is_media_url(url, content_type)
+
+                if not media_type:
+                    return
+
+                print(f"🔎 Found {media_type}: {url}")
+                headers = filter_headers(headers)
+                headers = inject_cookies(context, headers)
+                if "user-agent" not in headers:
+                    headers["user-agent"] = "Mozilla/5.0"
+                if "referer" not in headers and page_url:
+                    headers["referer"] = page_url
+                captured_urls[url] = media_type, headers
 
             def handle_response(response):
                 url = response.url
@@ -86,7 +130,7 @@ class PlaywrightCapturer(BaseCapturer):
                         headers["referer"] = page_url
                     captured_urls[url] = media_type, headers
 
-            page.on("response", handle_response)
+            page.on("response", handle_response_v2)
 
             print("⌛ Open page and play video manually")
             page.goto(page_url)

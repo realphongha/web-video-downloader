@@ -65,12 +65,24 @@ chrome.storage.local.get(["capturedUrls", "isCapturing"]).then((result) => {
 });
 
 function isVideoUrl(url, contentType) {
+  url = (url || "").toLowerCase();
+  contentType = (contentType || "").toLowerCase();
+
   if (url.includes(".m3u8")) return "hls";
-  if (url.includes(".mpd")) return "dash";
-  if (url.match(/\.(mp4|webm|mkv)(\?|$)/)) return "progressive";
   if (contentType.includes("application/vnd.apple.mpegurl") || contentType.includes("application/x-mpegurl")) return "hls";
+
+  if (url.includes(".mpd")) return "dash";
   if (contentType.includes("application/dash+xml")) return "dash";
-  if (contentType.includes("video/")) return "progressive";
+
+  if (url.includes(".m4s") || url.includes("mime=video") || url.includes("mime=audio")) {
+    return "dash";
+  }
+
+  if (url.match(/\.(mp4|webm|mkv)(\?|$)/)) return "progressive";
+
+  if (contentType.startsWith("video/") && !url.includes(".m4s") && !url.includes("segment")) {
+    return "progressive";
+  }
   return null;
 }
 

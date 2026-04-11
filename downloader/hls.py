@@ -56,7 +56,7 @@ class HLSDownloader(BaseDownloader):
             print("Invalid choice, try again 😿")
 
         selected = variants[idx]
-        print(f"\n✅ Selected: {selected['res']} | {selected['bw']}")
+        print(f"\n✅ Selected: Resolution: {selected['res']} | Bandwidth: {selected['bw']}")
 
         return self.resolve(selected["url"])
 

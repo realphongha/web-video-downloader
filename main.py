@@ -9,6 +9,9 @@ def download(args, result):
         if result.stream_type == "hls":
             print(f"Using {args.threads} threads for downloading 🚀...")
             downloader = DOWNLOADERS["hls"](args.threads)
+        elif result.stream_type == "dash":
+            print(f"Using {args.threads} threads for DASH downloading 🚀...")
+            downloader = DOWNLOADERS["dash"](args.threads)
         elif result.stream_type == "progressive":
             downloader = DOWNLOADERS["mp4"]()
         else:
