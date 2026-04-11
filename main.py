@@ -31,17 +31,17 @@ def run_api(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--sim", action="store_true",
+                        help="Simulate the browser with Playwright")
+    parser.add_argument("--url", help="Web URL, if using Playwright")
+    parser.add_argument("--ffmpeg", action="store_true",
+                        help="Use ffmpeg for downloading, slower but more stable")
     parser.add_argument("-t", "--threads", type=int, default=8,
                         help="Number of threads, higher is faster but can be unsafe")
-    parser.add_argument("--capturer", default="playwright", choices=["playwright", "api"])
-    parser.add_argument("--url", help="Web URL, if using Playwright")
-    parser.add_argument("--ffmpeg", action="store_true", help="Use ffmpeg, slower but more stable")
-
     args = parser.parse_args()
 
-    if args.capturer == "playwright":
+    if args.sim:
         run_playwright(args)
-    elif args.capturer == "api":
-        run_api(args)
     else:
-        raise Exception(f"Unknown capturer: {args.capturer}")
+        run_api(args)
+
