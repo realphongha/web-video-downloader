@@ -7,6 +7,7 @@ def download(args, result):
     downloader = DOWNLOADERS["ffmpeg"]() if args.ffmpeg else None
     if not downloader:
         if result.stream_type == "hls":
+            print(f"Using {args.threads} threads for downloading 🚀...")
             downloader = DOWNLOADERS["hls"](args.threads)
         elif result.stream_type == "progressive":
             downloader = DOWNLOADERS["mp4"]()
