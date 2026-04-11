@@ -1,8 +1,10 @@
 import requests
 import os
+import sys
 from abc import ABC
 from Crypto.Cipher import AES
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
 
 class Segment:
     def __init__(self, url, key=None, iv=None, is_init=False):
@@ -62,9 +64,14 @@ class BaseDownloader(ABC):
                 for i, seg in enumerate(parse_result.segments)
             }
 
-            for future in as_completed(futures):
-                i = futures[future]
-                files[i] = future.result()
+            with tqdm(total=len(futures), desc="Downloading", unit="seg",
+                      dynamic_ncols=True, mininterval=0.1, file=sys.stdout) as pbar:
+                for future in as_completed(futures):
+                    i = futures[future]
+                    files[i] = future.result()
+
+                    pbar.update(1)
+                    pbar.refresh()
 
         self.merge(files, output)
 

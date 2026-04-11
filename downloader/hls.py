@@ -1,5 +1,6 @@
 import os
 import time
+import re
 from urllib.parse import urljoin
 from .base import BaseDownloader, Segment, ParseResult
 
@@ -53,7 +54,7 @@ class HLSDownloader(BaseDownloader):
                 idx = int(input("\nSelect stream index: "))
                 if 0 <= idx < len(variants):
                     break
-            except:
+            except ValueError:
                 pass
             print("Invalid choice, try again 😼")
 

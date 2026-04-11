@@ -45,13 +45,41 @@ class PlaywrightCapturer(BaseCapturer):
             def handle_response(response):
                 url = response.url
                 request = response.request
+                headers = response.headers
                 media_type = None
+                content_type = headers.get("content-type", "").lower()
+
+
                 if ".m3u8" in url:
                     print(f"[+] Found m3u8: {url}")
                     media_type = "hls"
 
+                elif ".mpd" in url:
+                    print(f"[+] Found dash: {url}")
+                    media_type = "dash"
+
+                elif any(ext in url for ext in [".mp4", ".webm", ".mkv"]):
+                    print(f"[+] Found progressive video: {url}")
+                    media_type = "progressive"
+
+                # 🧠 Content-Type fallback (very important)
+                elif "application/vnd.apple.mpegurl" in content_type:
+                    print(f"[+] Found hls: {url}")
+                    media_type = "hls"
+
+                elif "application/x-mpegurl" in content_type:
+                    print(f"[+] Found hls: {url}")
+                    media_type = "hls"
+
+                elif "application/dash+xml" in content_type:
+                    print(f"[+] Found dash: {url}")
+                    media_type = "dash"
+
+                elif "video/" in content_type:
+                    print(f"[+] Found progressive video: {url}")
+                    media_type = "progressive"
+
                 if media_type:
-                    headers = request.headers
                     headers = filter_headers(headers)
                     headers = inject_cookies(context, headers)
                     if "user-agent" not in headers:
