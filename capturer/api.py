@@ -22,7 +22,7 @@ class APICapturer(BaseCapturer):
             stream_type = data.get("type")
             headers = data.get("headers", {})
 
-            print(f"[*] Download requested: {stream_type} {url}")
+            print(f"📝 Download requested: {stream_type} {url}")
 
             self._result = CaptureResult(
                 url=url,
@@ -34,7 +34,7 @@ class APICapturer(BaseCapturer):
             return {"status": "ok"}
 
     def _run_server(self):
-        print(f"[*] API server running at http://{self.host}:{self.port}")
+        print(f"💻 API server running at http://{self.host}:{self.port}")
         uvicorn.run(self.app, host=self.host, port=self.port)
 
     def capture(self, page_url=None) -> CaptureResult:
@@ -46,17 +46,13 @@ class APICapturer(BaseCapturer):
         server_thread = threading.Thread(target=self._run_server, daemon=True)
         server_thread.start()
 
-        print("[*] Open video in Chrome with extension")
-        print("[*] 1. Turn ON capturing in extension popup")
-        print("[*] 2. Play the video")
-        print("[*] 3. Click 'Select to Download' in popup")
-        print("[*] Waiting for URL selection...")
-
+        print("To download video: Open video in Chrome with extension")
+        print("1. Turn ON capturing in extension popup")
+        print("2. Play the video")
+        print("3. Click 'Select to Download' in popup")
         while True:
-            print("[*] Waiting for video URL... (Ctrl+C to exit)")
+            print("⌛ Waiting for URL selection...")
             self._event.wait()
             yield self._result
-
             self._result = None
             self._event.clear()
-

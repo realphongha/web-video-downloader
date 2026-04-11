@@ -14,11 +14,10 @@ class HLSDownloader(BaseDownloader):
     def resolve(self, url):
         text = self.fetch(url)
 
-        # 🎯 if not master → return directly
         if "#EXT-X-STREAM-INF" not in text:
             return url
 
-        print("\n[*] Master playlist detected\n")
+        print("\n😼 Master playlist detected\n")
 
         lines = text.splitlines()
         variants = []
@@ -41,14 +40,12 @@ class HLSDownloader(BaseDownloader):
                 })
 
         if not variants:
-            raise Exception("No variants found")
+            raise Exception("No variants found 😿")
 
-        # 🎮 show choices
-        print("[*] Available streams:")
+        print("📝 Available streams:")
         for i, v in enumerate(variants):
             print(f"{i}: {v['res']} | {v['bw']} | {v['url']}")
 
-        # 🧍 HITL choice
         while True:
             try:
                 idx = int(input("\nSelect stream index: "))
@@ -56,12 +53,11 @@ class HLSDownloader(BaseDownloader):
                     break
             except ValueError:
                 pass
-            print("Invalid choice, try again 😼")
+            print("Invalid choice, try again 😿")
 
         selected = variants[idx]
-        print(f"\n[✓] Selected: {selected['res']} | {selected['bw']}")
+        print(f"\n✅ Selected: {selected['res']} | {selected['bw']}")
 
-        # 🔁 recurse (handles nested masters)
         return self.resolve(selected["url"])
 
     def parse(self, url):
@@ -120,4 +116,3 @@ class HLSDownloader(BaseDownloader):
 
         open(filename, "wb").close()
         return filename
-

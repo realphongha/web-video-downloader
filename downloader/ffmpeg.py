@@ -12,6 +12,7 @@ class FFmpegDownloader(BaseDownloader):
         ).returncode == 0
 
     def download(self, capture, output: str):
+        print("Downloading with ffmpeg 👀...")
         header_str = ""
         for k, v in capture.headers.items():
             header_str += f"{k}: {v}\r\n"

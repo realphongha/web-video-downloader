@@ -15,10 +15,10 @@ def download(args, result):
     datetime_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_fn = f"{datetime_str}.mp4"
     downloader.download(result, output_fn)
-    print(f"✅ Saved to {output_fn}")
+    print(f"Download complete! 😻 Saved to {output_fn}")
 
 def run_playwright(args):
-    assert args.url, "URL is required"
+    assert args.url, "URL is required 😿"
     capturer = CAPTURERS["playwright"]()
     result = capturer.capture(args.url)
     download(args, result)

@@ -52,6 +52,7 @@ class BaseDownloader(ABC):
             os.remove(f)
 
     def download(self, capture, output: str):
+        print("Downloading 👀...")
         self.session = requests.Session()
         self.session.headers.update(capture.headers)
         url = self.resolve(capture.url)
